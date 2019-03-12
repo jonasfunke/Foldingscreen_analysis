@@ -2,6 +2,7 @@ function [parsed_data, warnings] = parse_gel_info(filepath, log_file)
 
     %% read line by line
     warnings = false;
+    disp(filepath)
     fileID = fopen(filepath);
     tmp = textscan(fileID,'%s','CommentStyle','#', 'Delimiter', '\n');
     fclose(fileID);
@@ -9,7 +10,7 @@ function [parsed_data, warnings] = parse_gel_info(filepath, log_file)
     parsed_data.filename = filepath;
     parsed_data.log_file = log_file;
     
-    logfile_ID = fopen(log_file,'w');
+    logfile_ID = fopen(log_file,'a');
     fprintf(logfile_ID,'%s\n', ['Parsing file: ' filepath]);
     disp(['Parsing file: ' filepath])
 

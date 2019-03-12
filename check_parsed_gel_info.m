@@ -8,7 +8,7 @@ function [parsed] = check_parsed_gel_info(parsed_data)
 
     missing_fields = {};
 
-    fileID = fopen(parsed_data.log_file,'w');
+    fileID = fopen(parsed_data.log_file,'a');
     
     for i=1:length(fields_required)
         if ~isfield(parsed_data, fields_required{i})

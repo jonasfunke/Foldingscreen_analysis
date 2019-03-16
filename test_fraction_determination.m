@@ -22,15 +22,18 @@ get_best_folding(profileData, gelInfo)
 %%
 
 close all, clear all, clc
-[fname pname] = uigetfile('Select mat file', '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/*.mat')
+[fname pname] = uigetfile('Select mat file', '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/*.mat');
 
 load([pname fname])
 
-profileData = analyze_gel_fractions(profileData, gelData);
+% select aggregates and monomer bands
+profileData = analyze_gel_fractions(profileData, gelData, 1.5); 
 
-profileData = compute_exp_parameter(profileData, 1.5);
+
+%% determine best folding conditions
 get_best_folding(profileData, gelInfo)
 
+%
 
 
 

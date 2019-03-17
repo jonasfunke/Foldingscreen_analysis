@@ -1,8 +1,9 @@
 function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summary_figure)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-
-
+    %%
+    %keyboard
+    %%
     height_width = zeros(length(profileData.profiles),1);
     width = zeros(length(profileData.profiles),1);
     for i=1:length(profileData.profiles)
@@ -60,7 +61,7 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
     index_foldings = [];
     for i=1:length(gelInfo.lanes)
         cur_name = strtrim(gelInfo.lanes{i});
-        if strcmpi(cur_name, 'scaffold') || strcmpi(cur_name, '1kb_ladder') || contains(cur_name,'ladder','IgnoreCase',true)
+        if contains(cur_name,'scaffold','IgnoreCase',true) || strcmpi(cur_name, '1kb_ladder') || contains(cur_name,'ladder','IgnoreCase',true)
             
         else
             index_foldings = [index_foldings, i];
@@ -85,7 +86,7 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
         end
     end 
     
-
+   %%
    folding_quality_metric = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width;
    
    % find best folding
@@ -102,12 +103,15 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
    end
    % find best Mg concentratio
    if ~isempty(index_Mgscrn)
+       index_Mgscrn = index_Mgscrn(index_Mgscrn~=0); % remove zeros if people did not include all Mg samples
        [~, i_sort] = sort(folding_quality_metric(index_Mgscrn), 'descend');
        index_best_Mgscrn = index_Mgscrn(i_sort(1));
        disp(['Best Mg-Screen: Lane ' num2str(index_best_Mgscrn) ' (' gelInfo.lanes{index_best_Mgscrn} ')'])
    end
+   
    % find best staple-scaffold ratio
    if ~isempty(index_RM)
+       index_RM = index_RM(index_RM~=0); % remove zeros if people did not include all RM samples
        [~, i_sort] = sort(folding_quality_metric(index_RM), 'descend');
        index_best_RM = index_RM(i_sort(1));
        disp(['Best RM: Lane ' num2str(index_best_RM) ' (' gelInfo.lanes{index_best_RM} ')'])
@@ -236,11 +240,15 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
         %set(gca, 'XTick', [1:length(profileData.profiles) ] )
 
         subplot(4,1,4)
-        plot(profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width, '.-')
+        plot(folding_quality_metric, '.-'), hold on
+        plot(index_best, folding_quality_metric(index_best), 'o'), hold on
+        plot(index_best_Tscrn, folding_quality_metric(index_best_Tscrn), '+'), hold on
+        plot(index_best_Mgscrn, folding_quality_metric(index_best_Mgscrn), 'x'), hold on
+
         xlabel('Lane')
         ylabel('monomer/(monomer+pocket+smear)/width')
         set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
-
+        
         pause
         close all
     end

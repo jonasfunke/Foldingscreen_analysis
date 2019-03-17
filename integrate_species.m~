@@ -16,7 +16,7 @@ function [profileData] = integrate_species(profileData, sigma_integrate)
     monomer_sums = zeros(length(profileData.profiles),1);
     monomer_boundaries = zeros(length(profileData.profiles),2);
     for i=1:length(profileData.profiles)
-        monomer_boundaries(i,:) = [max(1,round(profileData.monomerFits{i}.b1-sigma_integrate*profileData.monomerFits{i}.c1)) ...
+        monomer_boundaries(i,:) = [round(profileData.monomerFits{i}.b1-sigma_integrate*profileData.monomerFits{i}.c1) ...
             round(profileData.monomerFits{i}.b1+sigma_integrate*profileData.monomerFits{i}.c1)  ];
         monomer_sums(i) = sum(profileData.fullProfiles{i}(monomer_boundaries(i,1):monomer_boundaries(i,2)));
     end  

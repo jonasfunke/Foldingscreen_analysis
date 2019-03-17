@@ -1,8 +1,9 @@
-function [data_out] = get_best_folding(profileData, gelInfo, gelData)
+function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summary_figure)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
-
-
+    %%
+    keyboard
+    %%
     height_width = zeros(length(profileData.profiles),1);
     width = zeros(length(profileData.profiles),1);
     for i=1:length(profileData.profiles)
@@ -60,7 +61,7 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData)
     index_foldings = [];
     for i=1:length(gelInfo.lanes)
         cur_name = strtrim(gelInfo.lanes{i});
-        if strcmpi(cur_name, 'scaffold') || strcmpi(cur_name, '1kb_ladder') || contains(cur_name,'ladder','IgnoreCase',true)
+        if contains(cur_name,'scaffold','IgnoreCase',true) || strcmpi(cur_name, '1kb_ladder') || contains(cur_name,'ladder','IgnoreCase',true)
             
         else
             index_foldings = [index_foldings, i];
@@ -85,7 +86,7 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData)
         end
     end 
     
-
+   %%
    folding_quality_metric = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width;
    
    % find best folding
@@ -102,6 +103,7 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData)
    end
    % find best Mg concentratio
    if ~isempty(index_Mgscrn)
+       index_Mgscrn = index_Mgscrn(index_Mgscrn~=0); % remove zeros if people did not include all Mg sample
        [~, i_sort] = sort(folding_quality_metric(index_Mgscrn), 'descend');
        index_best_Mgscrn = index_Mgscrn(i_sort(1));
        disp(['Best Mg-Screen: Lane ' num2str(index_best_Mgscrn) ' (' gelInfo.lanes{index_best_Mgscrn} ')'])
@@ -111,6 +113,8 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData)
        [~, i_sort] = sort(folding_quality_metric(index_RM), 'descend');
        index_best_RM = index_RM(i_sort(1));
        disp(['Best RM: Lane ' num2str(index_best_RM) ' (' gelInfo.lanes{index_best_RM} ')'])
+       data_out.bestRM = gelInfo.lanes{index_best_RM};
+       data_out.bestRMIndex = index_best_RM;
    end
    
    % compare M20 to best Temp folding
@@ -148,73 +152,104 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData)
     % normalize width to scaffold width
     
     width_normalized = width/mean(width(index_scaffold));
+    
+    data_out.fractionMonomer = fraction_monomer;
+    data_out.fractionSmear = fraction_smear;
+    data_out.fractionPocket = fraction_pocket;
+    data_out.bestFolding = gelInfo.lanes{index_best};
+    data_out.bestFoldingIndex = index_best;
+    data_out.bestTscrn = gelInfo.lanes{index_best_Tscrn}; 
+    data_out.bestTscrnIndex = index_best_Tscrn; 
+    data_out.bestMgscrn = gelInfo.lanes{index_best_Mgscrn};
+    data_out.bestMgscrnIndex = index_best_Mgscrn;
+    
+    data_out.M20BetterThanTscrn = M20_better_than_bestT;
+    data_out.bandWidthNormalized = width_normalized;
+    
+    
 
+    %show_summary_figure = false;
     
-    
-    data_out.fractionMonomer= fraction_monomer;
-    data_out.fractionSmear= fraction_smear;
-    data_out.fractionPocket= fraction_pocket;
-    data_out.bestFolding =;
-    data_out.fractionMonomer= fraction_monomer;
-    
+    if show_summary_figure
     
 
+        cur_fig = figure('units','normalized','outerposition',[0 0 1 1]);
+        %subplot(4, 1, 1)
+        %plot(height_width, '.-')
+        %xlabel('Lane')
+        %ylabel('Height/width')
+        %set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)] )
 
-    
-    
-    cur_fig = figure('units','normalized','outerposition',[0 0 1 1]);
-    %subplot(4, 1, 1)
-    %plot(height_width, '.-')
-    %xlabel('Lane')
-    %ylabel('Height/width')
-    %set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)] )
+        %subplot(4,1,2)
+        %plot(profileData.monomerTotal, '.-')
+        %xlabel('Lane')
+        %ylabel('monomer absolute')
+        %set(gca, 'XTick', [1:length(profileData.profiles) ] )
 
-    %subplot(4,1,2)
-    %plot(profileData.monomerTotal, '.-')
-    %xlabel('Lane')
-    %ylabel('monomer absolute')
-    %set(gca, 'XTick', [1:length(profileData.profiles) ] )
+    %     subplot(4,1,1)
+    %     plot(width, '.-')
+    %     xlabel('Lane')
+    %     ylabel('Width')
+    %     set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
+    % 
+    %     subplot(4,1,2)
+    %     plot(width_normalized, '.-')
+    %     xlabel('Lane')
+    %     ylabel('Normalized Width')
+    %     set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
 
-%     subplot(4,1,1)
-%     plot(width, '.-')
-%     xlabel('Lane')
-%     ylabel('Width')
-%     set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
-% 
-%     subplot(4,1,2)
-%     plot(width_normalized, '.-')
-%     xlabel('Lane')
-%     ylabel('Normalized Width')
-%     set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
+       subplot(4,1,1:2)
+       imagesc(gelData.images{1}, [0 3.*std(gelData.images{1}(:))]), axis image, colormap gray, hold on
 
-   subplot(4,1,1:2)
-   imagesc(gelData.images{1}, [0 3.*std(gelData.images{1}(:))]), axis image, colormap gray, hold on
+       % plot pocket fits
+        for i=1:length(profileData.profiles)
+            plot(mean(profileData.lanePositions(i,1:2)), profileData.aggregateFit.b1, 'r.')
+            plot(mean(profileData.lanePositions(i,1:2))*[1 1], ...
+                [profileData.aggregateFit.b1-profileData.sigma_integrate*profileData.aggregateFit.c1 ...
+                profileData.aggregateFit.b1+profileData.sigma_integrate*profileData.aggregateFit.c1], 'r')
+        end
 
-    subplot(4,1,3)
-    plot(fraction_monomer, '.-'), hold on
-    plot(fraction_smear, '.-'), hold on
-    plot(fraction_pocket, '.-'), hold on
-    xlabel('Lane')
-    ylabel('monomer/(monomer+pocket+smear)')
-    set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
-    legend({'monomer', 'smear', 'pocket'})
-    %subplot(4,1,4)
-    %mig_distance = zeros(length(profileData.profiles),1);
-    %for i=1:length(profileData.profiles)
-    %    mig_distance(i) = profileData.monomerFits{i}.b1-profileData.aggregateFit.b1;
-    %end
-    %plot(mig_distance, '.-')
-    %xlabel('Lane')
-    %ylabel('Migration distance (pocket to monomer) [px]')
-    %set(gca, 'XTick', [1:length(profileData.profiles) ] )
-    
-    subplot(4,1,4)
-    plot(profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width, '.-')
-    xlabel('Lane')
-    ylabel('monomer/(monomer+pocket+smear)/width')
-    set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
-    
-    
+        % plot leading band fits
+        for i=1:length(profileData.profiles)
+            plot([profileData.lanePositions(i,1) profileData.lanePositions(i,2) ] , ...
+                [profileData.monomerFits{i}.b1 profileData.monomerFits{i}.b1], 'r')
+            plot(mean(profileData.lanePositions(i,1:2))*[1 1], ...
+                [profileData.monomerFits{i}.b1-profileData.sigma_integrate*profileData.monomerFits{i}.c1 ...
+                profileData.monomerFits{i}.b1+profileData.sigma_integrate*profileData.monomerFits{i}.c1], 'r')
+        end
+        title(['Band positions with sigma=' num2str(profileData.sigma_integrate)])
+        
+        subplot(4,1,3)
+        plot(fraction_monomer, '.-'), hold on
+        plot(fraction_smear, '.-'), hold on
+        plot(fraction_pocket, '.-'), hold on
+        xlabel('Lane')
+        ylabel('monomer/(monomer+pocket+smear)')
+        set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
+        legend({'monomer', 'smear', 'pocket'})
+        %subplot(4,1,4)
+        %mig_distance = zeros(length(profileData.profiles),1);
+        %for i=1:length(profileData.profiles)
+        %    mig_distance(i) = profileData.monomerFits{i}.b1-profileData.aggregateFit.b1;
+        %end
+        %plot(mig_distance, '.-')
+        %xlabel('Lane')
+        %ylabel('Migration distance (pocket to monomer) [px]')
+        %set(gca, 'XTick', [1:length(profileData.profiles) ] )
+
+        subplot(4,1,4)
+        plot(folding_quality_metric, '.-'), hold on
+        plot(index_best, folding_quality_metric(index_best), 'o'), hold on
+        plot(index_best_Tscrn, folding_quality_metric(index_best_Tscrn), '+'), hold on
+        plot(index_best_Mgscrn, folding_quality_metric(index_best_Mgscrn), 'x'), hold on
+
+        xlabel('Lane')
+        ylabel('monomer/(monomer+pocket+smear)/width')
+        set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
+        
+        pause
+        close all
+    end
 
  
 end

@@ -1,4 +1,4 @@
-function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summary_figure)
+function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, show_summary_figure)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
     %%
@@ -87,7 +87,17 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
     end 
     
    %%
-   folding_quality_metric = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width;
+   
+   if ~isempty(index_scaffold)
+       tmp = zeros(length(index_scaffold),1);
+       for i=1:length(index_scaffold)
+            tmp(i) = profileData.monomerFits{index_scaffold(i)}.c1;
+       end
+       width_normalized = width/mean(tmp);
+   else
+       width_normalized = width/mean(width);
+   end
+   folding_quality_metric = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width_normalized;
    
    % find best folding
    [~, i_sort] = sort(folding_quality_metric(index_foldings), 'descend');
@@ -175,7 +185,8 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
     if show_summary_figure
     
 
-        cur_fig = figure('units','normalized','outerposition',[0 0 1 1]);
+       cur_fig = figure('Visible','on', 'PaperPositionMode', 'manual','PaperUnits','centimeters','PaperPosition', [0 0 20 30], 'PaperSize', [20 30]);
+
         %subplot(4, 1, 1)
         %plot(height_width, '.-')
         %xlabel('Lane')
@@ -200,7 +211,7 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
     %     ylabel('Normalized Width')
     %     set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
 
-       subplot(4,1,1:2)
+       subplot(5,1,1:2)
        imagesc(gelData.images{1}, [0 3.*std(gelData.images{1}(:))]), axis image, colormap gray, hold on
 
        % plot pocket fits
@@ -221,36 +232,38 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
         end
         title(['Band positions with sigma=' num2str(profileData.sigma_integrate)])
         
-        subplot(4,1,3)
+        subplot(5,1,3)
         plot(fraction_monomer, '.-'), hold on
         plot(fraction_smear, '.-'), hold on
         plot(fraction_pocket, '.-'), hold on
-        xlabel('Lane')
-        ylabel('monomer/(monomer+pocket+smear)')
+        ylabel('Fraction')
         set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
-        legend({'monomer', 'smear', 'pocket'})
-        %subplot(4,1,4)
-        %mig_distance = zeros(length(profileData.profiles),1);
-        %for i=1:length(profileData.profiles)
-        %    mig_distance(i) = profileData.monomerFits{i}.b1-profileData.aggregateFit.b1;
-        %end
-        %plot(mig_distance, '.-')
-        %xlabel('Lane')
-        %ylabel('Migration distance (pocket to monomer) [px]')
-        %set(gca, 'XTick', [1:length(profileData.profiles) ] )
-
-        subplot(4,1,4)
+        legend({'monomer', 'smear', 'pocket'}, 'location', 'best')
+        grid on
+        
+        
+        subplot(5,1,4)
+        plot(width_normalized, '.-')
+        ylabel({'Normalized ', ' monomer band width [px]'})
+        set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)], ...
+            'YLim', [0 2])
+        grid on 
+        
+        subplot(5,1,5)
         plot(folding_quality_metric, '.-'), hold on
         plot(index_best, folding_quality_metric(index_best), 'o'), hold on
         plot(index_best_Tscrn, folding_quality_metric(index_best_Tscrn), '+'), hold on
         plot(index_best_Mgscrn, folding_quality_metric(index_best_Mgscrn), 'x'), hold on
 
-        xlabel('Lane')
-        ylabel('monomer/(monomer+pocket+smear)/width')
+        ylabel({'Quality metric ', 'Monomer fraction/norm_width'})
         set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
+        grid on
         
-        pause
-        close all
+
+
+        
+       % pause
+       % close all
     end
 
  

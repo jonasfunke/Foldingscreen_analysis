@@ -33,17 +33,21 @@ if ~isfield(data.profileData, 'aggregateSelectedArea')
 
     % integrate aggregates, smear, and monomer bands
     data.profileData = integrate_species(data.profileData, 1.5);
-    get_best_folding(data.profileData, data.gelInfo, data.gelData, true);
+    %get_best_folding(data.profileData, data.gelInfo, data.gelData, true);
     
     save([pname fname], '-struct','data')
     disp(['Data saved to ' pname fname])
 
 else
     display('Pocket and monomers have already been selected.')
+    
+
 
 end
 
-
+[~, cur_fig] = get_best_folding(data.profileData, data.gelInfo, data.gelData, true);
+tmp = strsplit(pname, filesep);
+print(cur_fig, '-dpdf', [pname tmp{end-1} '_analysis.pdf']); %save figure
 
 %% 
 

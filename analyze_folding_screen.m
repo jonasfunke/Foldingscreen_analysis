@@ -49,7 +49,7 @@ end
 tmp = strsplit(pname, filesep);
 print(cur_fig, '-dpdf', [pname tmp{end-1} '_analysis.pdf']); %save figure
 
-%% 
+%% -------------------- Analyze all screens -----------------------------------------
 
 %log_out = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/data.out';
 root_path = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/';

@@ -16,27 +16,27 @@ if ~isfield(data.profileData, 'aggregateSelectedArea')
     
     save([pname fname], '-struct','data')
     
-    %% write intergrated intensities to file
+    % write intergrated intensities to file
     tmp = [data.profileData.monomerTotal data.profileData.smearTotal data.profileData.pocketTotal];
     fraction_tmp = tmp./(tmp(:,1)+tmp(:,2)+tmp(:,3));
     
-    fid = fopen([pname fname(1:end-4) '_data.txt'],'w'); 
+    fid = fopen([pname fname(1:end-4) '_data.out'],'w'); 
     fprintf(fid,'%s\n','#Monomer Smear Pocket MonomerFraction SmearFraction PocketFraction');
     fclose(fid);
     dlmwrite([pname fname(1:end-4) '_data.txt'], [tmp fraction_tmp], 'delimiter', '\t', '-append');
     
     disp(['Data saved to ' pname fname])
-%%
+
 else
     display('Pocket and monomers have already been selected.')
-    
-
-
 end
 
-
-%%
-
-[~, cur_fig] = get_best_folding(data.profileData, data.gelInfo, data.gelData, true);
+%% dertime the best folding conditions
+[data_tmp, cur_fig] = get_best_folding(data.profileData, data.gelInfo, data.gelData, true);
 tmp = strsplit(pname, filesep);
 print(cur_fig, '-dpdf', [pname tmp{end-1} '_analysis.pdf']); %save figure
+data.foldingAnalysis = data_tmp;
+save([pname fname], '-struct','data')
+disp(['Data saved to ' pname fname])
+
+

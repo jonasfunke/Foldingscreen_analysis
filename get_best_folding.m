@@ -86,8 +86,21 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
         end
     end 
     
+   %keyboard
    %%
-   folding_quality_metric = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width;
+   
+    migration_distance = zeros(length(gelInfo.lanes),1);
+    for i = 1:length(gelInfo.lanes)
+        migration_distance(i) = profileData.monomerFits{i}.b1;
+    end
+    
+    normalized_migration_distance = (migration_distance-min(migration_distance(index_foldings)))./(max(migration_distance(index_foldings))-min(migration_distance(index_foldings)));
+    %%
+   folding_quality_metric_old = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width;
+   folding_quality_metric = normalized_migration_distance.*profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width;
+   %%
+   
+   
    
    % find best folding
    [~, i_sort] = sort(folding_quality_metric(index_foldings), 'descend');
@@ -133,8 +146,9 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
 
     end
    
-    
-    
+   
+    %%
+   %% 
    
    % calculate amount of monomer, smear and aggreagtes for best folding
    % condition and M20
@@ -200,8 +214,8 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
     %     ylabel('Normalized Width')
     %     set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
 
-       subplot(4,1,1:2)
-       imagesc(gelData.images{1}, [0 3.*std(gelData.images{1}(:))]), axis image, colormap gray, hold on
+       subplot(4,1,1:3)
+       imagesc(gelData.images{1}, [0 3.*std(gelData.images{1}(:))]), axis image, colormap gray, colorbar, hold on
 
        % plot pocket fits
         for i=1:length(profileData.profiles)
@@ -219,16 +233,24 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
                 [profileData.monomerFits{i}.b1-profileData.sigma_integrate*profileData.monomerFits{i}.c1 ...
                 profileData.monomerFits{i}.b1+profileData.sigma_integrate*profileData.monomerFits{i}.c1], 'r')
         end
+
+
+        plot(mean([profileData.lanePositions(index_best,1) profileData.lanePositions(index_best,2) ]) , ...
+                profileData.monomerFits{index_best}.b1, 'go')
+        plot(mean([profileData.lanePositions(index_best_Tscrn,1) profileData.lanePositions(index_best_Tscrn,2) ]) , ...
+                profileData.monomerFits{index_best_Tscrn}.b1, 'g+')
+        plot(mean([profileData.lanePositions(index_best_Mgscrn,1) profileData.lanePositions(index_best_Mgscrn,2) ]) , ...
+                profileData.monomerFits{index_best_Mgscrn}.b1, 'gx')
         title(['Band positions with sigma=' num2str(profileData.sigma_integrate)])
         
-        subplot(4,1,3)
-        plot(fraction_monomer, '.-'), hold on
-        plot(fraction_smear, '.-'), hold on
-        plot(fraction_pocket, '.-'), hold on
-        xlabel('Lane')
-        ylabel('monomer/(monomer+pocket+smear)')
-        set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
-        legend({'monomer', 'smear', 'pocket'})
+%         subplot(4,1,3)
+%         plot(fraction_monomer, '.-'), hold on
+%         plot(fraction_smear, '.-'), hold on
+%         plot(fraction_pocket, '.-'), hold on
+%         xlabel('Lane')
+%         ylabel('monomer/(monomer+pocket+smear)')
+%         set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
+%         legend({'monomer', 'smear', 'pocket'})
         %subplot(4,1,4)
         %mig_distance = zeros(length(profileData.profiles),1);
         %for i=1:length(profileData.profiles)
@@ -241,6 +263,7 @@ function [data_out] = get_best_folding(profileData, gelInfo, gelData, show_summa
 
         subplot(4,1,4)
         plot(folding_quality_metric, '.-'), hold on
+        plot(folding_quality_metric_old, '.--')
         plot(index_best, folding_quality_metric(index_best), 'o'), hold on
         plot(index_best_Tscrn, folding_quality_metric(index_best_Tscrn), '+'), hold on
         plot(index_best_Mgscrn, folding_quality_metric(index_best_Mgscrn), 'x'), hold on

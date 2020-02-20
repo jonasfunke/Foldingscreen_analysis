@@ -55,6 +55,9 @@ else
 
 end
 
+
+%%
+
 [~, cur_fig] = get_best_folding(data.profileData, data.gelInfo, data.gelData, true);
 tmp = strsplit(pname, filesep);
 print(cur_fig, '-dpdf', [pname tmp{end-1} '_analysis.pdf']); %save figure

@@ -14,7 +14,7 @@ function profileData = select_species(profileData,gelData, sigma_plot)
         close all
         %sum 
 
-        %% compute sum profiles and fit it with gaussian
+        % compute sum profiles and fit it with gaussian
         %close all
         %cf = figure();
         fits = cell(length(profileData.profiles),1);
@@ -23,10 +23,15 @@ function profileData = select_species(profileData,gelData, sigma_plot)
         for i=1:length(profileData.profiles)
             profile_sum = profile_sum + profileData.fullProfiles{i}(selectedPocketArea(2):selectedPocketArea(2)+selectedPocketArea(4));
         end
-
+    
+        %y = mean(gelData.images{1}( selectedPocketArea(2):selectedPocketArea(2)+selectedPocketArea(4), selectedPocketArea(1):selectedPocketArea(1)+selectedPocketArea(3)),2);
         x = double(selectedPocketArea(2):selectedPocketArea(2)+selectedPocketArea(4));
         pocket_fit = fit(x', profile_sum, 'gauss1');
-       
+       %%
+        
+        %%
+        
+        
         %clf
         %plot(x, profile_sum), hold on
         %plot(x, pocket_fit(x))

@@ -14,7 +14,7 @@ txt_files = dir([path_selected filesep '*.txt']);
 tif_files = dir([path_selected filesep '*.tif']);
 
 if length(tif_files)==1 && length(txt_files)==1
-    compute_profiles(root_path, dir_name, txt_files(1).name, tif_files(1).name)
+    compute_profiles(root_path, dir_name, txt_files(1).name, tif_files(1).name);
 else
     disp(['Error. Found ' num2str(length(tif_files)) ' tif files and ' num2str(length(txt_files)) ' txt files in ' dir_name])
 end
@@ -46,7 +46,7 @@ end
 
 
 %% 
-
+close all, clear all
 %log_out = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/data.out';
 root_path = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/';
 
@@ -59,7 +59,8 @@ root_path = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/';
 
 folders = dir(root_path);
 
-discard = {'.', '..', 'AAA_TEMPLATE', 'ZZZfolder_of_shame_aka_missing_data', 'ZZZnon_standard_folding_screens'};
+discard = {'.', '..', 'AAA_TEMPLATE', 'ZZZfolder_of_shame_aka_missing_data', 'ZZZnon_standard_folding_screens', ...
+    'ZZZ_output'};
 
 i_discard = [];
 for i=1:length(folders)
@@ -117,12 +118,97 @@ for i=1:length(folders)
 end
 %fclose(logfile_ID);
 
+%%
+close all
+path_out = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/ZZZ_output/';
 
+cur_fig = figure(1);
+set(gcf,'Visible','on', 'PaperPositionMode', 'manual','PaperUnits','centimeters', ...
+    'PaperPosition', [0 0 20 15], 'PaperSize', [ 20 15]);
 d = [];
 for i=1:length(metrics)
     if ~isempty(metrics{i})
         d = [d; metrics{i}.fractionMonomer(metrics{i}.bestFoldingIndex)];
+        if metrics{i}.fractionMonomer(metrics{i}.bestFoldingIndex) > 1 
+            disp(folders(i).name)
+        end
     end
 end
+histogram(d, 20)
+
+xlabel('Monomer fraction of best folding condition')
+ylabel('Frequency')
+
+print(cur_fig, '-dpdf', [path_out 'monomer_fraction_of_best_folding.pdf']); %save figure
+
+%%
+cur_fig = figure(2);
+set(gcf,'Visible','on', 'PaperPositionMode', 'manual','PaperUnits','centimeters', ...
+    'PaperPosition', [0 0 30 15], 'PaperSize', [ 30 15]);
+best_folding_condition = {};
+best_T = [];
+best_Mg = [];
+
+for i=1:length(metrics)
+    if ~isempty(metrics{i})
+        best_folding_condition = [best_folding_condition; metrics{i}.bestFolding];
+        if strcmpi(metrics{i}.bestTscrn, 'T1')
+            cur_T = 48;
+        end
+        if strcmpi(metrics{i}.bestTscrn, 'T2')
+            cur_T = 50;
+        end
+        if strcmpi(metrics{i}.bestTscrn, 'T3')
+            cur_T = 52;
+        end
+        if strcmpi(metrics{i}.bestTscrn, 'T4')
+            cur_T = 54;
+        end
+        if strcmpi(metrics{i}.bestTscrn, 'T5')
+            cur_T = 56;
+        end
+        if strcmpi(metrics{i}.bestTscrn, 'T6')
+            cur_T = 58;
+        end
+        if strcmpi(metrics{i}.bestTscrn, 'T7')
+            cur_T = 60;
+        end
+        if strcmpi(metrics{i}.bestTscrn, 'T8')
+            cur_T = 62;
+        end
+        best_T = [best_T; cur_T];
+        
+        
+        
+        
+        
+        best_Mg = [best_Mg; str2double(metrics{i}.bestMgscrn(2:end))];
+       
+    end
+end
+subplot(1, 3, 1)
+tmp = categorical(best_folding_condition);
+histogram(tmp)
+ylabel('Frequency')
+title('Best folding condition')
+
+subplot(1, 3, 2)
+histogram(best_T, [46.5:1:63])
+ylabel('Frequency')
+xlabel('Folding temperature')
+title('Best folding temperature')
+set(gca, 'XTick', [48:2:62])
+
+subplot(1, 3, 3)
+histogram(best_Mg, [2.5:5:32.5])
+xlabel('Mg concentration')
+ylabel('Frequency')
+title('Best Mg concentration')
+
+print(cur_fig, '-dpdf', [path_out 'best_folding_T_Mg.pdf']); %save figure
+
+%%
+figure(3)
+plot(best_T, d, '.')
 %%
 

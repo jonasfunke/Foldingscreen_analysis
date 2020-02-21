@@ -88,14 +88,8 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     
    %keyboard
    %%
-    migration_distance = zeros(length(gelInfo.lanes),1);
-    for i = 1:length(gelInfo.lanes)
-        migration_distance(i) = profileData.monomerFits{i}.b1;
-    end
-    
-    normalized_migration_distance = (migration_distance-min(migration_distance(index_foldings)))./(max(migration_distance(index_foldings))-min(migration_distance(index_foldings)));
 
-
+    % compute quality metric based on monomer fraction and band width
    if ~isempty(index_scaffold)
        tmp = zeros(length(index_scaffold),1);
        for i=1:length(index_scaffold)
@@ -105,9 +99,17 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
    else
        width_normalized = width/mean(width);
    end
-   
-   folding_quality_metric = normalized_migration_distance.*profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width_normalized;
+   folding_quality_metric = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width_normalized;
 
+   % compute quality metric based on monomer fraction and band width and
+   % migration distance
+    migration_distance = zeros(length(gelInfo.lanes),1);
+    for i = 1:length(gelInfo.lanes)
+        migration_distance(i) = profileData.monomerFits{i}.b1;
+    end
+    pocket_location = profileData.aggregateFit.b1;
+    normalized_migration_distance = (migration_distance-pocket_location)./(max(migration_distance(index_foldings))-pocket_location);
+   folding_quality_metric_2 = normalized_migration_distance.*folding_quality_metric;
    
    
    % find best folding
@@ -187,8 +189,8 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     
     data_out.M20BetterThanTscrn = M20_better_than_bestT;
     data_out.bandWidthNormalized = width_normalized;
-    
-    
+    data_out.migrationDistanceNormalized = normalized_migration_distance;
+    data_out.qualityMetric = folding_quality_metric;
 
     %show_summary_figure = false;
     
@@ -279,15 +281,17 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         
         
         subplot(5,1,4)
-        plot(width_normalized, '.-')
-        ylabel({'Normalized ', ' monomer band width [px]'})
+        plot(width_normalized, '.-'), hold on
+        plot(normalized_migration_distance, '.--')
+        ylabel({'Normalized ', 'band width or migr. distance'})
         set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)], ...
             'YLim', [0 2])
         grid on 
+        legend({'Band width', 'Migr. distance'}, 'location', 'best')
         
         subplot(5,1,5)
         plot(folding_quality_metric, '.-'), hold on
-        plot(folding_quality_metric_old, '.--')
+        plot(folding_quality_metric_2, '.--')
         plot(index_best, folding_quality_metric(index_best), 'o'), hold on
         plot(index_best_Tscrn, folding_quality_metric(index_best_Tscrn), '+'), hold on
         plot(index_best_Mgscrn, folding_quality_metric(index_best_Mgscrn), 'x'), hold on
@@ -295,6 +299,7 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         ylabel({'Quality metric ', 'Monomer fraction/norm_width'})
         set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
         grid on
+        legend({'Quality metric', 'Quality metric 2'}, 'location', 'best')
         
 
 

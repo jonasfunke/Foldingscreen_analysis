@@ -14,7 +14,7 @@ root_path = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/';
 folders = dir(root_path);
 
 discard = {'.', '..', 'AAA_TEMPLATE', 'ZZZfolder_of_shame_aka_missing_data', 'ZZZnon_standard_folding_screens', ...
-    'ZZZ_output'};
+    'ZZZ_output', 'FE_tCS3_scaffolds', 'FE_tsplitori_scaffolds'};
 
 i_discard = [];
 for i=1:length(folders)

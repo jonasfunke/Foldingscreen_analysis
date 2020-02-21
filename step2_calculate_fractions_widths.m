@@ -23,7 +23,7 @@ if ~isfield(data.profileData, 'aggregateSelectedArea')
     fid = fopen([pname fname(1:end-4) '_data.out'],'w'); 
     fprintf(fid,'%s\n','#Monomer Smear Pocket MonomerFraction SmearFraction PocketFraction');
     fclose(fid);
-    dlmwrite([pname fname(1:end-4) '_data.txt'], [tmp fraction_tmp], 'delimiter', '\t', '-append');
+    dlmwrite([pname fname(1:end-4) '_data.out'], [tmp fraction_tmp], 'delimiter', '\t', '-append');
     
     disp(['Data saved to ' pname fname])
 
@@ -38,5 +38,6 @@ print(cur_fig, '-dpdf', [pname tmp{end-1} '_analysis.pdf']); %save figure
 data.foldingAnalysis = data_tmp;
 save([pname fname], '-struct','data')
 disp(['Data saved to ' pname fname])
+disp('Done')
 
 

@@ -1,4 +1,5 @@
 function [parsed] = check_parsed_gel_info(parsed_data)
+    % this script checks if the parsed data from the gel-info.txt is ok
     %% check if all important objects are there
     parsed = false;
     fields_required = {'user', 'project', 'design_name', 'date', 'scaffold_type', ...

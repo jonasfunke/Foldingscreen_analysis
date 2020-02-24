@@ -1,10 +1,9 @@
 %% analyze the profiles
-
 close all, clear all, clc
-[fname pname] = uigetfile('/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS/*.mat', 'Select mat file');
+root_path = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS'; % change this to your path
+[fname pname] = uigetfile([root_path '/*.mat'], 'Select mat file');
 
 data = load([pname fname]); % load data
-
 
 if ~isfield(data.profileData, 'aggregateSelectedArea')
     % select aggregates and monomer bands

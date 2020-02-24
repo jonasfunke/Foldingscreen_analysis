@@ -1,9 +1,5 @@
 function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, show_summary_figure)
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
-    %%
-    %keyboard
-    %%
+%	Determine best folding conditions
     height_width = zeros(length(profileData.profiles),1);
     width = zeros(length(profileData.profiles),1);
     for i=1:length(profileData.profiles)
@@ -86,9 +82,6 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         end
     end 
     
-   %keyboard
-   %%
-
     % compute quality metric based on monomer fraction and band width
    if ~isempty(index_scaffold)
        tmp = zeros(length(index_scaffold),1);
@@ -156,9 +149,6 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
 
     end
    
-   
-    %%
-   %% 
    
    % calculate amount of monomer, smear and aggreagtes for best folding
    % condition and M20

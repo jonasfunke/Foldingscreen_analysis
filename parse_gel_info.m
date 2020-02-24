@@ -1,5 +1,5 @@
 function [parsed_data, warnings] = parse_gel_info(filepath, log_file)
-
+    % parse the gel_info.txt file
     %% read line by line
     warnings = false;
     disp(filepath)

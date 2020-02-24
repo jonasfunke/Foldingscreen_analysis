@@ -1,5 +1,5 @@
 function [profileData] = integrate_species(profileData, sigma_integrate)
-%UNTITLED Summary of this function goes here
+% compute fractions
 %   Detailed explanation goes here
 
     %% integrate aggregates

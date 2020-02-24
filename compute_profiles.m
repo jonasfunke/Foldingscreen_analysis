@@ -1,5 +1,5 @@
 function [gelData, gelInfo, profileData] = compute_profiles(root_path,dir_name, gel_info_name, image_name)
-%UNTITLED Summary of this function goes here
+%  calculate profiles from gels
 %   Detailed explanation goes here
 
 

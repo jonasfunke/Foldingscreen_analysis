@@ -1,7 +1,6 @@
 %% execute this to select a folder and analyze a folding screen
-
 close all, clear all, clc
-root_path = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS';
+root_path = '/Users/jonasfunke/Dropbox (DIETZ LAB)/FOLDINGSCREENS'; % change this to your directory
 
 [path_selected] = uigetdir(root_path, 'Select an Directory with intial foling screen');
 [~,dir_name,ext] = fileparts(path_selected);

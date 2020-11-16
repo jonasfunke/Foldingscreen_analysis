@@ -1,172 +1,90 @@
 function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, show_summary_figure)
-%	Determine best folding conditions
-    height_width = zeros(length(profileData.profiles),1);
-    width = zeros(length(profileData.profiles),1);
-    for i=1:length(profileData.profiles)
-        height_width(i) = profileData.monomerFits{i}.a1/profileData.monomerFits{i}.c1;
-        width(i) = profileData.monomerFits{i}.c1;
+% @ step3
+% compute various metrics from gel data
+% determine best folding conditions
+
+    %process data & normalize
+    stapleNorm = double(profileData.stapleLine(:,2)) ./ double(profileData.stapleLine(1,2));
+    spreadNormfactor = 3.0;
+    if profileData.has_ladder
+        stapleNorm = [stapleNorm(1) stapleNorm(1) stapleNorm' stapleNorm(end) stapleNorm(end)];
+        migrateNorm = profileData.monomerFits(1,2);
+    else
+        stapleNorm = [stapleNorm(1) stapleNorm' stapleNorm(end)];
+        %TODO uses scaffold but no proportionality factor to correct for it
+        migrateNorm = profileData.monomerFits(1,2);
     end
-        
-    % T-screen indices
-    index_Tscrn = [];
-    for i=1:length(gelInfo.lanes)
-        cur_name = strtrim(gelInfo.lanes{i});
-        if strcmpi(cur_name(1), 'T')
-            index_Tscrn(str2num(cur_name(2))) = i;
-        end
-    end
-    % Mg-screen indices
-    index_Mgscrn =[];
-    for i=1:length(gelInfo.lanes)
-        cur_name = strtrim(gelInfo.lanes{i});
-        if strcmpi(cur_name, 'M5')
-            index_Mgscrn(1) = i;
-        end
-        if strcmpi(cur_name, 'M10')
-            index_Mgscrn(2) = i;
-        end
-        if strcmpi(cur_name, 'M15')
-            index_Mgscrn(3) = i;
-        end
-        if strcmpi(cur_name, 'M20')
-            index_Mgscrn(4) = i;
-        end
-        if strcmpi(cur_name, 'M25')
-            index_Mgscrn(5) = i;
-        end
-        if strcmpi(cur_name, 'M30')
-            index_Mgscrn(6) = i;
+    normfactor = stapleNorm' ./ migrateNorm';
+
+
+    %% get lane indices
+    function indices = get_lane_index(lanes, identifier)
+        indices = [];
+        for l=1:length(lanes)
+            name = upper(strtrim(lanes{l}));
+            comp = strcmpi(name(1:length(identifier)), identifier);
+            if comp
+                indices = [indices l];
+            end
         end
     end
-            
-    % RM indices
-    index_RM = [];
-    for i=1:length(gelInfo.lanes)
-        cur_name = strtrim(gelInfo.lanes{i});
-        if strcmpi(cur_name, 'RM1')
-            index_RM(1) = i;
-        end
-        if strcmpi(cur_name, 'RM1_diluted')
-            index_RM(1) = i;
-        end
-        if strcmpi(cur_name, 'RM2')
-            index_RM(2) = i;
-        end
-    end 
-    % all indices except for scaffold and ladder
-    index_foldings = [];
-    for i=1:length(gelInfo.lanes)
-        cur_name = strtrim(gelInfo.lanes{i});
-        if contains(cur_name,'scaffold','IgnoreCase',true) || strcmpi(cur_name, '1kb_ladder') || contains(cur_name,'ladder','IgnoreCase',true)
-            
-        else
-            index_foldings = [index_foldings, i];
-        end
-    end 
-    
+    index_Tscrn = get_lane_index(gelInfo.lanes, 'T');
+    index_Mgscrn = get_lane_index(gelInfo.lanes, 'M');
+    index_RM = get_lane_index(gelInfo.lanes, 'RM');
+    %index_scaffold = get_lane_index(gelInfo.lanes, "SC", true);
+
+    index_foldings = sort([index_Tscrn index_Mgscrn index_RM]);
+    % TODO find?
     % index M20
-    index_M20 = [];
     for i=1:length(gelInfo.lanes)
         cur_name = strtrim(gelInfo.lanes{i});
         if strcmpi(cur_name, 'M20')
             index_M20 = i;
         end
     end 
-    
-    %index scaffold
-    index_scaffold = [];
-    for i=1:length(gelInfo.lanes)
-        cur_name = strtrim(gelInfo.lanes{i});
-        if contains(cur_name, 'sc','IgnoreCase',true)
-            index_scaffold = [index_scaffold, i];
-        end
-    end 
+
+
+    %% metrics
+    mono_spread = profileData.monomerFits(:,3) .* normfactor .* spreadNormfactor;
+    mono_migrate = profileData.monomerFits(:,2) .* normfactor;
+     
+    % calculate amount of monomer, smear and aggreagtes for best folding
+    total_band = (profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal);
+    fraction_monomer = profileData.monomerTotal./ total_band;
+    fraction_smear = profileData.smearTotal./ total_band;
+    fraction_pocket = profileData.pocketTotal./ total_band;
     
     % compute quality metric based on monomer fraction and band width
-   if ~isempty(index_scaffold)
-       tmp = zeros(length(index_scaffold),1);
-       for i=1:length(index_scaffold)
-            tmp(i) = profileData.monomerFits{index_scaffold(i)}.c1;
-       end
-       width_normalized = width/mean(tmp);
-   else
-       width_normalized = width/mean(width);
-   end
-   folding_quality_metric = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal)./width_normalized;
+    folding_quality_metric = profileData.monomerTotal ./ (profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal) ./ mono_spread;
+    % compute quality metric based on monomer fraction and band width and migration distance
+    folding_quality_metric_2 = mono_migrate .* folding_quality_metric;
 
-   % compute quality metric based on monomer fraction and band width and
-   % migration distance
-    migration_distance = zeros(length(gelInfo.lanes),1);
-    for i = 1:length(gelInfo.lanes)
-        migration_distance(i) = profileData.monomerFits{i}.b1;
-    end
-    pocket_location = profileData.aggregateFit.b1;
-    normalized_migration_distance = (migration_distance-pocket_location)./(max(migration_distance(index_foldings))-pocket_location);
-   folding_quality_metric_2 = normalized_migration_distance.*folding_quality_metric;
-   
-   
-   % find best folding
-   [~, i_sort] = sort(folding_quality_metric(index_foldings), 'descend');
-   index_best = index_foldings(i_sort(1));
-   disp(['Best folding: Lane ' num2str(index_best) ' (' gelInfo.lanes{index_best} ')'])
-    %get_ranking(height_width(index_foldings))
-    
-   % find best Temperature interval
-   if ~isempty(index_Tscrn)
-       [~, i_sort] = sort(folding_quality_metric(index_Tscrn), 'descend');
-       index_best_Tscrn = index_Tscrn(i_sort(1));
-       disp(['Best T-Screen: Lane ' num2str(index_best_Tscrn) ' (' gelInfo.lanes{index_best_Tscrn} ')'])
-   end
-   % find best Mg concentratio
-   if ~isempty(index_Mgscrn)
-       index_Mgscrn = index_Mgscrn(index_Mgscrn~=0); % remove zeros if people did not include all Mg samples
-       [~, i_sort] = sort(folding_quality_metric(index_Mgscrn), 'descend');
-       index_best_Mgscrn = index_Mgscrn(i_sort(1));
-       disp(['Best Mg-Screen: Lane ' num2str(index_best_Mgscrn) ' (' gelInfo.lanes{index_best_Mgscrn} ')'])
-   end
-   
-   % find best staple-scaffold ratio
-   if ~isempty(index_RM)
-       index_RM = index_RM(index_RM~=0); % remove zeros if people did not include all RM samples
-       [~, i_sort] = sort(folding_quality_metric(index_RM), 'descend');
-       index_best_RM = index_RM(i_sort(1));
-       disp(['Best RM: Lane ' num2str(index_best_RM) ' (' gelInfo.lanes{index_best_RM} ')'])
-       data_out.bestRM = gelInfo.lanes{index_best_RM};
-       data_out.bestRMIndex = index_best_RM;
-   end
-   
-   % compare M20 to best Temp folding
-   % RM indices
-    
-    % check if M20 is better than best 4h
-    if ~isempty(index_M20) && ~isempty(index_best_Tscrn)
-       if folding_quality_metric(index_M20) > folding_quality_metric(index_best_Tscrn)
-           M20_better_than_bestT = true;
-       else
-           M20_better_than_bestT = false;
-       end
-       disp(['Is M20 better than best 4h folding (' gelInfo.lanes{index_best_Tscrn} '): ' num2str(M20_better_than_bestT)])
 
+    %% find best folding
+    function index = best_lane(metric, indices)
+        if ~isempty(indices)
+            [~, i_sort] = sort(metric(indices), 'descend');
+            index = indices(i_sort(1));
+        end
     end
+    index_best = best_lane(folding_quality_metric, index_foldings);
+    index_best_Tscrn = best_lane(folding_quality_metric, index_Tscrn);
+    index_Mgscrn = index_Mgscrn(index_Mgscrn~=0); % remove zeros if people did not include all Mg samples
+    index_best_Mgscrn = best_lane(folding_quality_metric, index_Mgscrn);
+    index_RM = index_RM(index_RM~=0); % remove zeros if people did not include all RM samples
+    index_best_RM = best_lane(folding_quality_metric, index_RM);
+
    
+    % check if M20 is better than best 4h T
+    if folding_quality_metric(index_M20) > folding_quality_metric(index_best_Tscrn)
+     	M20_better_than_bestT = true;
+    else
+        M20_better_than_bestT = false;
+    end
+
+
    
-   % calculate amount of monomer, smear and aggreagtes for best folding
-   % condition and M20
-   
-   fraction_monomer = profileData.monomerTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal);
-   fraction_smear = profileData.smearTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal);
-   fraction_pocket = profileData.pocketTotal./(profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal);
-   disp(['Fraction of monomers/smear/pocket for the best foldings: ' num2str(round(100*fraction_monomer(index_best))) '%, ' ...
-       num2str(round(100*fraction_smear(index_best))) '%, ', ...
-       num2str(round(100*fraction_pocket(index_best))) '%'])
-   
-   disp(['Fraction of monomers/smear/pocket for M20: ' num2str(round(100*fraction_monomer(index_M20))) '%, ' ...
-       num2str(round(100*fraction_smear(index_M20))) '%, ', ...
-       num2str(round(100*fraction_pocket(index_M20))) '%'])
- 
-   
-    % normalize width to scaffold width
-        
+    %% save 
     data_out.fractionMonomer = fraction_monomer;
     data_out.fractionSmear = fraction_smear;
     data_out.fractionPocket = fraction_pocket;
@@ -176,17 +94,38 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     data_out.bestTscrnIndex = index_best_Tscrn; 
     data_out.bestMgscrn = gelInfo.lanes{index_best_Mgscrn};
     data_out.bestMgscrnIndex = index_best_Mgscrn;
-    
+    data_out.bestRM = gelInfo.lanes{index_best_RM};
+    data_out.bestRMIndex = index_best_RM;
+
     data_out.M20BetterThanTscrn = M20_better_than_bestT;
-    data_out.bandWidthNormalized = width_normalized;
-    data_out.migrationDistanceNormalized = normalized_migration_distance;
+    data_out.bandWidthNormalized = mono_spread;
+    data_out.migrationDistanceNormalized = mono_migrate;
     data_out.qualityMetric = folding_quality_metric;
 
-    %show_summary_figure = false;
     
-    if show_summary_figure
-    
+    %% figure
+       
+   
+    % calculate amount of monomer, smear and aggreagtes for best folding
+    % condition and M20
+    disp(['Best folding: Lane ' num2str(index_best) ' (' gelInfo.lanes{index_best} ')'])
+    disp(['Best Mg-Screen: Lane ' num2str(index_best_Mgscrn) ' (' gelInfo.lanes{index_best_Mgscrn} ')'])
+    disp(['Best T-Screen: Lane ' num2str(index_best_Tscrn) ' (' gelInfo.lanes{index_best_Tscrn} ')'])
 
+    disp(['Best RM: Lane ' num2str(index_best_RM) ' (' gelInfo.lanes{index_best_RM} ')'])
+    disp(['Is M20 better than best 4h folding (' gelInfo.lanes{index_best_Tscrn} '): ' num2str(M20_better_than_bestT)])
+
+    disp(['Fraction of monomers/smear/pocket for the best foldings: ' num2str(round(100*fraction_monomer(index_best))) '%, ' ...
+       num2str(round(100*fraction_smear(index_best))) '%, ', ...
+       num2str(round(100*fraction_pocket(index_best))) '%'])
+
+    disp(['Fraction of monomers/smear/pocket for M20: ' num2str(round(100*fraction_monomer(index_M20))) '%, ' ...
+       num2str(round(100*fraction_smear(index_M20))) '%, ', ...
+       num2str(round(100*fraction_pocket(index_M20))) '%'])
+ 
+   
+    if show_summary_figure
+  
        cur_fig = figure('Visible','on', 'PaperPositionMode', 'manual','PaperUnits','centimeters','PaperPosition', [0 0 20 30], 'PaperSize', [20 30]);
 
         %subplot(4, 1, 1)
@@ -208,9 +147,9 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     %     set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
     % 
     %     subplot(4,1,2)
-    %     plot(width_normalized, '.-')
+    %     plot(widths, '.-')
     %     xlabel('Lane')
-    %     ylabel('Normalized Width')
+    %     ylabel('Width')
     %     set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
 
        subplot(5,1,1:2)
@@ -218,28 +157,28 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
 
        % plot pocket fits
         for i=1:length(profileData.profiles)
-            plot(mean(profileData.lanePositions(i,1:2)), profileData.aggregateFit.b1, 'r.')
+            plot(mean(profileData.lanePositions(i,1:2)), profileData.aggregateFit(2), 'r.')
             plot(mean(profileData.lanePositions(i,1:2))*[1 1], ...
-                [profileData.aggregateFit.b1-profileData.sigma_integrate*profileData.aggregateFit.c1 ...
-                profileData.aggregateFit.b1+profileData.sigma_integrate*profileData.aggregateFit.c1], 'r')
+                [profileData.aggregateFit(2)-profileData.sigma_integrate*profileData.aggregateFit(3) ...
+                profileData.aggregateFit(2)+profileData.sigma_integrate*profileData.aggregateFit(3)], 'r')
         end
 
         % plot leading band fits
         for i=1:length(profileData.profiles)
             plot([profileData.lanePositions(i,1) profileData.lanePositions(i,2) ] , ...
-                [profileData.monomerFits{i}.b1 profileData.monomerFits{i}.b1], 'r')
+                [profileData.monomerFits(i,2) profileData.monomerFits(i,2)], 'r')
             plot(mean(profileData.lanePositions(i,1:2))*[1 1], ...
-                [profileData.monomerFits{i}.b1-profileData.sigma_integrate*profileData.monomerFits{i}.c1 ...
-                profileData.monomerFits{i}.b1+profileData.sigma_integrate*profileData.monomerFits{i}.c1], 'r')
+                [profileData.monomerFits(i,2)-profileData.sigma_integrate*profileData.monomerFits(i,3) ...
+                profileData.monomerFits(i,2)+profileData.sigma_integrate*profileData.monomerFits(i,3)], 'r')
         end
 
 
         plot(mean([profileData.lanePositions(index_best,1) profileData.lanePositions(index_best,2) ]) , ...
-                profileData.monomerFits{index_best}.b1, 'go')
+                profileData.monomerFits(index_best,2), 'go')
         plot(mean([profileData.lanePositions(index_best_Tscrn,1) profileData.lanePositions(index_best_Tscrn,2) ]) , ...
-                profileData.monomerFits{index_best_Tscrn}.b1, 'g+')
+                profileData.monomerFits(index_best_Tscrn,2), 'g+')
         plot(mean([profileData.lanePositions(index_best_Mgscrn,1) profileData.lanePositions(index_best_Mgscrn,2) ]) , ...
-                profileData.monomerFits{index_best_Mgscrn}.b1, 'gx')
+                profileData.monomerFits(index_best_Mgscrn, 2), 'gx')
         title(['Band positions with sigma=' num2str(profileData.sigma_integrate)])
         
 %         subplot(4,1,3)
@@ -271,11 +210,11 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         
         
         subplot(5,1,4)
-        plot(width_normalized, '.-'), hold on
-        plot(normalized_migration_distance, '.--')
+        plot(mono_spread, '.-'), hold on
+        plot(mono_migrate, '.--')
         ylabel({'Normalized ', 'band width or migr. distance'})
         set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)], ...
-            'YLim', [0 2])
+            'YLim', [0 1.])
         grid on 
         legend({'Band width', 'Migr. distance'}, 'location', 'best')
         
@@ -290,14 +229,8 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         set(gca, 'XTick', [1:length(profileData.profiles) ], 'XTickLabels', gelInfo.lanes, 'XLim', [1 length(profileData.profiles)])
         grid on
         legend({'Quality metric', 'Quality metric 2'}, 'location', 'best')
-        
-
-
-        
-       % pause
-       % close all
     end
-
- 
 end
+
+
 

@@ -9,7 +9,7 @@ function [parsed_data, warnings] = parse_gel_info(filepath, log_file)
     tmp = textscan(fileID,'%s','CommentStyle','#', 'Delimiter', '\n');
     fclose(fileID);
     lines = tmp{1};
-    parsed_data.filename = filepath;
+    parsed_data.filepath = filepath;
     parsed_data.log_file = log_file;
     
     logfile_ID = fopen(log_file,'a');

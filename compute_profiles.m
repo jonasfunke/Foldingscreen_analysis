@@ -1,18 +1,14 @@
-function [gelData, gelInfo, profileData] = compute_profiles(root_path, dir_name, gel_info_name, image_name)
+function [gelData, gelInfo, profileData] = compute_profiles(pname, name, txt_file, img_file)
 % @ step1
 % calculate profiles from gels
 
-    path_out = [root_path filesep dir_name ];
-    file_out = [path_out filesep dir_name];
-
     % load gel_info and check for errors
-    [gelInfo, ~] = parse_gel_info([path_out filesep gel_info_name], [path_out filesep gel_info_name(1:end-4) '_log.log']);
+    [gelInfo, ~] = parse_gel_info(txt_file, [pname filesep name, '_log.log']);
     check_parsed_gel_info(gelInfo);
 
     %% via MATLAB_TOOLBOX
     % load gelData
-    gelData_raw = load_gel_image('data_dir', path_out, 'n_images', 1,...
-        'paths_to_images', {[path_out filesep image_name]});
+    gelData_raw = load_gel_image('data_dir', pname, 'n_images', 1, 'paths_to_images', {img_file});
     % check and correct raw data
     gelData_raw = check_gel_saturation(gelData_raw);
     gelData = background_correct_gel_image(gelData_raw, 'histogram_background', 'on');
@@ -22,6 +18,7 @@ function [gelData, gelInfo, profileData] = compute_profiles(root_path, dir_name,
 
     
     %% check and link data
+    % TODO move print figure
     if length(profileData.fullProfiles)==length(gelInfo.lanes)
 
         % plot areas 
@@ -34,7 +31,7 @@ function [gelData, gelInfo, profileData] = compute_profiles(root_path, dir_name,
             text(areas(i,1)+areas(i,3)/2, areas(i,2) , gelInfo.lanes{i}, 'Color', 'r', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center', 'FontSize', 8)
         end
         set(gca, 'XTickLabel', [], 'YTickLabel', [])
-        print(cur_fig, '-dpng', '-r 300' , [file_out '_lanes.png']); %save figure
+        print(cur_fig, '-dpng', '-r 300' , [pname filesep name '_lanes.png']); %save figure
 
         % plot profiles
     
@@ -47,21 +44,15 @@ function [gelData, gelInfo, profileData] = compute_profiles(root_path, dir_name,
             subplot(length(profileData.profiles), 1, i)
             plot(profileData.lanePositions(i,3):profileData.lanePositions(i,4), profileData.profiles{i}), hold on
             legend(gelInfo.lanes{i})
-            %myleg = [myleg, {gelInfo.lanes{i}}];
         end
-        %legend(myleg)
         ylabel('Raw Intensity')
         xlabel('Migration distance [px]')
-        print(cur_fig, '-dpdf', [file_out '_profiles.pdf']); %save figure
+        print(cur_fig, '-dpdf', [pname filesep name '_profiles.pdf']); %save figure
 
     else
         disp('Warning: number of lanes in gel_info.txt does noth match number of detected lanes.' )
     end
 
-    %% save data
-    disp('Saving data... please wait')
-    save([file_out  '_data.mat'], 'gelData', 'gelInfo', 'profileData' )
-    disp(['Data written to: ' file_out  '_data.mat'])
 
 end
 

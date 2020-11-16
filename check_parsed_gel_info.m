@@ -21,8 +21,8 @@ function [parsed] = check_parsed_gel_info(parsed_data)
     end
 
     if isempty(missing_fields)
-        disp(['Data OK: ' parsed_data.filename])
-        fprintf(fileID,'%s\n', ['Data OK: ' parsed_data.filename]);
+        disp(['Data OK: ' parsed_data.filepath])
+        fprintf(fileID,'%s\n', ['Data OK: ' parsed_data.filepath]);
         parsed = true;
     else
         tmp = join(missing_fields(:), ', ');

@@ -1,14 +1,14 @@
 function [profileData] = integrate_species(profileData, sigma_integrate)
-% compute fractions
-%   Detailed explanation goes here
+% @ step2
+% compute fractions of selected species per lane
 
     %% integrate aggregates
     pocket_sums = zeros(length(profileData.profiles), 1);
     pocket_boundaries = zeros(length(profileData.profiles),2);
 
     for i=1:length(profileData.profiles)
-        pocket_boundaries(i,:) = [max(1,round(profileData.aggregateFit.b1-sigma_integrate*profileData.aggregateFit.c1)) ...
-            round(profileData.aggregateFit.b1+sigma_integrate*profileData.aggregateFit.c1)  ];
+        pocket_boundaries(i,:) = [max(1,round(profileData.aggregateFit(2)-sigma_integrate*profileData.aggregateFit(3))) ...
+            round(profileData.aggregateFit(2)+sigma_integrate*profileData.aggregateFit(3))  ];
         pocket_sums(i) = sum(profileData.fullProfiles{i}(pocket_boundaries(i,1):pocket_boundaries(i,2) ));
     end
     %% integrate monomers
@@ -16,8 +16,8 @@ function [profileData] = integrate_species(profileData, sigma_integrate)
     monomer_sums = zeros(length(profileData.profiles),1);
     monomer_boundaries = zeros(length(profileData.profiles),2);
     for i=1:length(profileData.profiles)
-        monomer_boundaries(i,:) = [max(1,round(profileData.monomerFits{i}.b1-sigma_integrate*profileData.monomerFits{i}.c1)) ...
-            round(profileData.monomerFits{i}.b1+sigma_integrate*profileData.monomerFits{i}.c1)  ];
+        monomer_boundaries(i,:) = [max(1,round(profileData.monomerFits(i,2)-sigma_integrate*profileData.monomerFits(i,3))) ...
+            round(profileData.monomerFits(i,2)+sigma_integrate*profileData.monomerFits(i,3))  ];
         monomer_sums(i) = sum(profileData.fullProfiles{i}(monomer_boundaries(i,1):monomer_boundaries(i,2)));
     end  
 
@@ -38,18 +38,6 @@ function [profileData] = integrate_species(profileData, sigma_integrate)
     profileData.smearTotal = smear_sums;
     profileData.smearBoundaries = smear_boundaries;
     profileData.sigma_integrate = sigma_integrate;
-
-    
-    %subplot(5,1,5)
-        %tmp = zeros(length(profileData.profiles),1);
-        %for i=1:length(profileData.profiles)
-        %    tmp(i) = fits{i}.b1;
-        %end
-        %plot(tmp, '.-')
-        
-    %% Find best lane
-    
-    
     
 end
 

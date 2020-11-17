@@ -1,13 +1,14 @@
-function step2_anotate_profiles(fname, pname)
+function step2_anotate_profiles(fname, pname, sigma_integrate)
 % step2: IFS analysis pipeline
 % anotate the profiles by marking species
 
     data = load([pname filesep fname]); % load data
     % select aggregates and monomer bands
-    data.profileData = select_species(data.profileData, data.gelData, 1.0); 
+    data.profileData.sigma_integrate = sigma_integrate;
+    data.profileData = select_species(data.profileData, data.gelData); 
 
     % integrate aggregates, smear, and monomer bands
-    data.profileData = integrate_species(data.profileData, 1.0);
+    data.profileData = integrate_species(data.profileData);
     
     % save
     disp(['Saving to ' pname filesep fname]);

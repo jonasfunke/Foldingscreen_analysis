@@ -159,9 +159,10 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         % TODO add ladder_migrate_error to migrate as error bar
         subplot(5,1,4)
         plot(mono_spread, '.-'), hold on
-        plot(mono_migrate, '.--'), hold on
-        ylabel({'Normalized ', 'spread or migr. distance'})
-        set(gca, 'XTick', (1:n), 'XTickLabels', gelInfo.lanes, 'XLim', [1 n], 'YLim', [0 1.])
+        rel_mono_migrate = mono_migrate./mono_migrate_best;
+        plot(rel_mono_migrate, '.--'), hold on
+        ylabel({'Normalized ', 'spread or rela. migr. distance'})
+        set(gca, 'XTick', (1:n), 'XTickLabels', gelInfo.lanes, 'XLim', [1 n], 'YLim', [0 rel_mono_migrate(1)])
         legend({'Band spread', 'Migr. distance'}, 'location', 'best')
         grid on 
         

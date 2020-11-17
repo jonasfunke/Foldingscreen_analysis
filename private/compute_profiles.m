@@ -20,13 +20,14 @@ function [gelData, gelInfo, profileData] = compute_profiles(pname, name, txt_fil
     %% check and link data
     % TODO move print figure
     if length(profileData.fullProfiles)==length(gelInfo.lanes)
-
+        n = length(profileData.profiles);
         % plot areas 
         cur_fig = figure('Visible','on', 'PaperPositionMode', 'manual','PaperUnits','points','PaperPosition', [0 0 1000 500], 'Position', [0 1000 1000 500]);
         imagesc(gelData.images{1}, [0 3.*std(gelData.images{1}(:))]), axis image, colormap gray, hold on
 
         areas = [profileData.lanePositions(:,1)   profileData.lanePositions(:,3) profileData.lanePositions(:,2)-profileData.lanePositions(:,1)  profileData.lanePositions(:,4)-profileData.lanePositions(:,3)];
-        for i=1:length(profileData.profiles)
+
+        for i=1:n
             rectangle('Position', areas(i,:), 'EdgeColor', 'r', 'Linewidth', 1);
             text(areas(i,1)+areas(i,3)/2, areas(i,2) , gelInfo.lanes{i}, 'Color', 'r', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center', 'FontSize', 8)
         end
@@ -37,11 +38,11 @@ function [gelData, gelInfo, profileData] = compute_profiles(pname, name, txt_fil
     
         cur_fig = figure;
         set(gcf,'Visible','on', 'PaperPositionMode', 'manual','PaperUnits','centimeters', ...
-            'PaperPosition', [0 0 20 3*length(profileData.profiles)], ...
-            'PaperSize', [ 20 3*length(profileData.profiles)]);
+            'PaperPosition', [0 0 20 3*n], ...
+            'PaperSize', [ 20 3*n]);
         
-        for i=1:length(profileData.profiles)
-            subplot(length(profileData.profiles), 1, i)
+        for i=1:n
+            subplot(n, 1, i)
             plot(profileData.lanePositions(i,3):profileData.lanePositions(i,4), profileData.profiles{i}), hold on
             legend(gelInfo.lanes{i})
         end

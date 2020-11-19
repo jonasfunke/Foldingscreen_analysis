@@ -18,7 +18,7 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         migrateNorm = profileData.monomerFits(1,2);
     end
     normfactor = stapleNorm' ./ migrateNorm';
-
+    
 
     %% get lane indices
     function indices = get_lane_index(lanes, identifier)
@@ -49,7 +49,7 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     mono_spread = profileData.monomerFits(:,3) .* normfactor .* spreadNormfactor;
     mono_migrate = profileData.monomerFits(:,2) .* normfactor;
     % TODO add ladder_migrate_error helps qunatify migrate error dispite normalisation
-    % ladder_migrate_error = mono_migrate(1) - mono_migrate(end);  %mono_migrate(1) = 1 due to normalisation
+    ladder_migrate_error = abs(mono_migrate(1) - mono_migrate(end));  %mono_migrate(1) = 1 due to normalisation
      
     % calculate amount of monomer, smear and aggreagtes for best folding
     total_band = (profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal);
@@ -67,8 +67,21 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     else
         mono_migrate_best = max(mono_migrate(2:end-1));
     end
-    folding_quality_metric_migrate = (mono_migrate./mono_migrate_best).^2 .* folding_quality_metric;
-
+    
+    rel_mono_migrate = mono_migrate./mono_migrate_best;
+    % TODO add ladder_migrate_error helps qunatify migrate error dispite normalisation
+    ladder_migrate_error = abs(rel_mono_migrate(1) - rel_mono_migrate(end));  %mono_migrate(1) = 1 due to normalisation
+    n = length(profileData.profiles);
+    folding_quality_metric_migrate = zeros(n, 1);
+    tolerance = 2.0;
+    for i = 1:n
+        if (1-rel_mono_migrate(i)) < tolerance*ladder_migrate_error
+            folding_quality_metric_migrate(i) = folding_quality_metric(i);
+        else
+            folding_quality_metric_migrate(i) = (rel_mono_migrate(i)).^10 .* folding_quality_metric(i); 
+        end
+    end
+            
 
     %% find best folding
     function index = best_lane(metric, indices)
@@ -77,16 +90,16 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
             index = indices(i_sort(1));
         end
     end
-    index_best = best_lane(folding_quality_metric, index_foldings);
-    index_best_Tscrn = best_lane(folding_quality_metric, index_Tscrn);
+    index_best = best_lane(folding_quality_metric_migrate, index_foldings);
+    index_best_Tscrn = best_lane(folding_quality_metric_migrate, index_Tscrn);
     index_Mgscrn = index_Mgscrn(index_Mgscrn~=0); % remove zeros if people did not include all Mg samples
-    index_best_Mgscrn = best_lane(folding_quality_metric, index_Mgscrn);
+    index_best_Mgscrn = best_lane(folding_quality_metric_migrate, index_Mgscrn);
     index_RM = index_RM(index_RM~=0); % remove zeros if people did not include all RM samples
-    index_best_RM = best_lane(folding_quality_metric, index_RM);
+    index_best_RM = best_lane(folding_quality_metric_migrate, index_RM);
 
    
     % check if M20 is better than best 4h T
-    if folding_quality_metric(index_M20) > folding_quality_metric(index_best_Tscrn)
+    if folding_quality_metric_migrate(index_M20) > folding_quality_metric_migrate(index_best_Tscrn)
      	M20_better_than_bestT = true;
     else
         M20_better_than_bestT = false;
@@ -159,7 +172,7 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         % TODO add ladder_migrate_error to migrate as error bar
         subplot(5,1,4)
         plot(mono_spread, '.-'), hold on
-        rel_mono_migrate = mono_migrate./mono_migrate_best;
+        
         plot(rel_mono_migrate, '.--'), hold on
         ylabel({'Normalized ', 'spread or rela. migr. distance'})
         set(gca, 'XTick', (1:n), 'XTickLabels', gelInfo.lanes, 'XLim', [1 n], 'YLim', [0 rel_mono_migrate(1)])
@@ -170,9 +183,9 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         subplot(5,1,5)
         plot(folding_quality_metric, '.-'), hold on
         plot(folding_quality_metric_migrate, '.--'), hold on
-        plot(index_best, folding_quality_metric(index_best), 'o'), hold on
-        plot(index_best_Tscrn, folding_quality_metric(index_best_Tscrn), '+'), hold on
-        plot(index_best_Mgscrn, folding_quality_metric(index_best_Mgscrn), 'x'), hold on
+        plot(index_best, folding_quality_metric_migrate(index_best), 'o'), hold on
+        plot(index_best_Tscrn, folding_quality_metric_migrate(index_best_Tscrn), '+'), hold on
+        plot(index_best_Mgscrn, folding_quality_metric_migrate(index_best_Mgscrn), 'x'), hold on
         ylabel({'Quality metric ', 'Monomer fraction/norm_width'})
         set(gca, 'XTick', (1:n), 'XTickLabels', gelInfo.lanes, 'XLim', [1 n])
         legend({'Quality metric', 'Quality metric migrate'}, 'location', 'best')

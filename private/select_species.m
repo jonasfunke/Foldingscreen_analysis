@@ -1,4 +1,4 @@
-function profileData = select_species(profileData,gelData)
+function profileData = select_species(profileData,gelData, gelInfo)
 % @ step2
 % select context specfic areas in gel and calculate bands with gauss fit
 % TODO optimize selection order for fast & convenient workflow
@@ -7,21 +7,29 @@ function profileData = select_species(profileData,gelData)
     while ~peaks_ok
         %% select species
         plot_image_ui(gelData.images{1});
+        % TODO use gelInfo to figure out how many folding lanes to select
+        % TODO use gelInfo to figure out how many scaffolds to select
+        % TODO use gelInfo to figure out how many ladders to select
+        nLanes_mono = 16;
+        nLanes_scaffold = 2;
+        nLanes_ladder = 2;
         % select area for pockets
         title('Select pockets area')
         rect_pocket = drawrectangle('Label','Pocket','Color',[1 0 0]);
         selectedPocketArea = int32(rect_pocket.Position);
         % select line for monomer band
+        
         title('Select monomer line (double click to place last)')
         line_mono = drawpolyline('Label','Monomer','Color',[0 0 1]);
         pos_mono = line_mono.Position;
         if length(pos_mono) == 2
-            selectedMono_y = linspace(pos_mono(1,2), pos_mono(2,2), 16);
-            selectedMono = [ones(1,16,'uint32')' selectedMono_y'];
+            selectedMono_y = linspace(pos_mono(1,2), pos_mono(2,2), nLanes_mono);
+            selectedMono = [ones(1,nLanes_mono,'uint32')' selectedMono_y'];
         else
             selectedMono = int32(pos_mono);
         end   
         % select scaffold bands
+        % TODO use nLanes_scaffold to figure out how many scaff to select
         title('Select Scaffold L')
         point_scaffL = drawpoint('Label','sL','Color',[0 1 0]);
         selectedScaffold_L = int32(point_scaffL.Position);
@@ -29,6 +37,7 @@ function profileData = select_species(profileData,gelData)
         point_scaffR = drawpoint('Label','sR','Color',[0 1 0]);
         selectedScaffold_R = int32(point_scaffR.Position);
         % select ladder bands
+        % TODO instead of the prompt use nLanes_ladder
         has_ladder = strcmp(questdlg('Ladder?','Does it include a ladder?' ,'No','Yes', 'Yes'),'Yes');
         if has_ladder    
             title('Select ladder L')
@@ -43,8 +52,13 @@ function profileData = select_species(profileData,gelData)
         line_staple = drawpolyline('Label','Staple','Color',[0.5 0.5 0.5]);
         pos_staple = line_staple.Position;
         if length(pos_staple) == 2
-            selectedStaple_y = linspace(pos_staple(1,2), pos_staple(2,2), 16);
-            selectedStaple = [ones(1,16,'uint32')' selectedStaple_y'];
+            selectedStaple_y = linspace(pos_staple(1,2), pos_staple(2,2), nLanes_mono);
+            selectedStaple = [ones(1,nLanes_mono,'uint32')' selectedStaple_y'];
+            
+        elseif length(pos_staple) == 1
+            selectedStaple_y = linspace(pos_staple(1,2), pos_staple(1,2), nLanes_mono);
+            selectedStaple = [ones(1,nLanes_mono,'uint32')' selectedStaple_y'];
+            
         else
             selectedStaple = int32(pos_staple);
         end

@@ -7,7 +7,7 @@ function [fname] = step1_make_profiles(pname)
     tif_files = dir([pname filesep '*.tif']);
 
     if length(tif_files)~=1 || length(txt_files)~=1
-        disp(['Error. Found ' num2str(length(tif_files)) ' tif files and ' num2str(length(txt_files)) ' txt files in ' dir_name])
+        disp(['Error. Found ' num2str(length(tif_files)) ' tif files and ' num2str(length(txt_files)) ' txt files in ' txt_files])
     else
         % get data
         txt = [txt_files(1).folder filesep txt_files(1).name];

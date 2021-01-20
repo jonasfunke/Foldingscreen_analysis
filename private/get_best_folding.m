@@ -46,11 +46,14 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
 
 
     %% metrics
+
     mono_spread = profileData.monomerFits(:,3) .* normfactor .* spreadNormfactor;
     mono_migrate = profileData.monomerFits(:,2) .* normfactor;
+    
+    %disp("Staples are not correctly selected")
     % TODO add ladder_migrate_error helps qunatify migrate error dispite normalisation
     ladder_migrate_error = abs(mono_migrate(1) - mono_migrate(end));  %mono_migrate(1) = 1 due to normalisation
-     
+
     % calculate amount of monomer, smear and aggreagtes for best folding
     total_band = (profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal);
     fraction_monomer = profileData.monomerTotal ./ total_band;

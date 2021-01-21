@@ -18,8 +18,7 @@ function profileData = select_species(profileData,gelData, gelInfo)
         rect_pocket = drawrectangle('Label','Pocket','Color',[1 0 0]);
         selectedPocketArea = int32(rect_pocket.Position);
         % select line for monomer band
-        
-        title('Select monomer line (double click to place last)')
+        title('Select monomer line (double click to place last). pick faulty lanes above pocket to ignore')
         line_mono = drawpolyline('Label','Monomer','Color',[0 0 1]);
         pos_mono = line_mono.Position;
         if length(pos_mono) == 2
@@ -62,7 +61,9 @@ function profileData = select_species(profileData,gelData, gelInfo)
         else
             selectedStaple = int32(pos_staple);
         end
-        %wait for finalized selection
+        
+        %NOTE: positions that have been moved around do not update
+        %TODO: -low- add listener to update positions
         wait(rect_pocket);
         title('double click pocket-area to finish)')
         close all
@@ -70,13 +71,13 @@ function profileData = select_species(profileData,gelData, gelInfo)
         %% get band data
         % compute pocket sum profiles and fit it with gaussian.
         %       position and width of pocket is always the same -> sum
-        xpos = selectedPocketArea(2);
+        xpos_pocket = selectedPocketArea(2);
         height = selectedPocketArea(4);
         y = zeros(height+1,1);
         for i=1:n
-            y = y + profileData.fullProfiles{i}(xpos:xpos+height);
+            y = y + profileData.fullProfiles{i}(xpos_pocket:xpos_pocket+height);
         end
-        x = double(xpos:xpos+height);
+        x = double(xpos_pocket:xpos_pocket+height);
         pocket_fit =  coeffvalues(fit(x', y, 'gauss1'));
 
         % compute monomer profiles and fit it with gaussian
@@ -88,6 +89,7 @@ function profileData = select_species(profileData,gelData, gelInfo)
         mono_fits = zeros(length(profileData.profiles),3);
         % NOTE cannot fit staples as data of lanes is not available (performance)
         %staple_fits = cell(length(profileData.profiles),1);
+        
         for i=1:n     
             if has_ladder
                 if i == 1
@@ -123,6 +125,13 @@ function profileData = select_species(profileData,gelData, gelInfo)
 
             options = fitoptions('gauss1', 'Lower', [0 xpos 0], 'Upper', [Inf (xpos+height) Inf]);
             mono_fits(i,:) = coeffvalues(fit(x', y, 'gauss1', options)); 
+            
+            % ignore lanes picked above pocket
+            if xpos < xpos_pocket
+                mono_fits(i,1) = 0.0;
+                mono_fits(i,2) = xpos_pocket;
+                mono_fits(i,3) = 0.0;
+            end
         end    
 
         % add to profiles structure

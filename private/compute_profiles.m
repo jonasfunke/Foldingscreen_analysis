@@ -12,6 +12,8 @@ function [gelData, gelInfo, profileData] = compute_profiles(pname, name, txt_fil
     % check and correct raw data
     gelData_raw = check_gel_saturation(gelData_raw);
     gelData = background_correct_gel_image(gelData_raw, 'histogram_background', 'on');
+    % NOTE: in rare cases the values below zero still apear
+    % TODO: pocket correction would be nice
     % get profileData
     profileData = get_gel_lanes(gelData, 'display', 'on', 'cutoff', 0.05, ...
         'number_of_lanes', length(gelInfo.lanes), 'display', 'off', 'move_min_zero', 'Yes');

@@ -3,31 +3,42 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
 % compute various metrics from gel data
 % determine best folding conditions
 
+    n = length(profileData.profiles);
+
     %process data & normalize
-    stapleNorm = double(profileData.stapleLine(1,2)) ./ double(profileData.stapleLine(:,2));
-    %TODO find propper spreadNormfactor for plotting and quality metric balance
-    spreadNormfactor = 15.0;
+    mono_1 = profileData.has_ladder + 2;
+    mono_end1 = n - profileData.has_ladder - 1;
+    %subtract gel above pocket
+    xpos_pocket = profileData.aggregateSelectedArea(2);
+    staple_migrate = profileData.stapleFits(:,2) - double(xpos_pocket);
+    mono_migrate = profileData.monomerFits(:,2) - double(xpos_pocket);
     
     % extrapolating staple norm
-    offL =  stapleNorm(2) - stapleNorm(1);
-    nL = stapleNorm(1) - offL;
-    offR =  stapleNorm(end-1) - stapleNorm(end);
-    nR = stapleNorm(end) - offR;
+    offL =  staple_migrate(mono_1 + 1) - staple_migrate(mono_1);
+    offR =  staple_migrate(mono_end1 -1 ) - staple_migrate(mono_end1);    
     if profileData.has_ladder
-        nL2 = stapleNorm(1) - 2* offL;
-        nR2 = stapleNorm(end) - 2* offR;
-        stapleNorm = [nL2 nL stapleNorm' nR nR2];
-        migrateNorm = profileData.monomerFits(1,2);
+        staple_migrate(2) = staple_migrate(mono_1) - offL;
+        staple_migrate(end-1) = staple_migrate(mono_end1) - offR;
+        
+        staple_migrate(1) = staple_migrate(mono_1) - 2* offL;
+        staple_migrate(end) = staple_migrate(mono_end1) - 2* offR;
+
+        ladderNorm = mono_migrate(1);
     else
-        stapleNorm = [nL stapleNorm' nR];
+        staple_migrate(1) = staple_migrate(mono_1) - offL;
+        staple_migrate(end) = staple_migrate(mono_end1) - offR;
         %TODO uses scaffold but no proportionality factor to correct for it
         %TODO proportionality factor form database average of each scaffold 
-        migrateNorm = profileData.monomerFits(1,2);
+        ladderNorm = mono_migrate(1);
     end
     %NOTE: sqrt of stapleNorm to reduce its effect on the normalisation.
     %Full effect seems to overcorrect migration distances (theoretical
     %explanation missing!)
-    normfactor =  sqrt(stapleNorm') ./ migrateNorm';
+    gelNorm = sqrt(staple_migrate ./ max(staple_migrate));
+    ladderNorm = ladderNorm .* gelNorm(1);
+    
+    mono_spread = profileData.monomerFits(:,3) ./ ladderNorm ./ gelNorm;
+    mono_migrate = mono_migrate ./ ladderNorm ./ gelNorm;
     
 
     %% get lane indices
@@ -56,9 +67,6 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
 
 
     %% metrics
-
-    mono_spread = profileData.monomerFits(:,3) .* normfactor .* spreadNormfactor;
-    mono_migrate = profileData.monomerFits(:,2) .* normfactor;
      
     % calculate amount of monomer, smear and aggreagtes for best folding
     total_band = (profileData.monomerTotal+profileData.pocketTotal+profileData.smearTotal);
@@ -67,9 +75,11 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     fraction_pocket = profileData.pocketTotal./ total_band;
     
     % compute quality metric based on monomer fraction and band width
+    %TODO find propper spreadNormfactor for plotting and quality metric balance
+    spreadNormfactor = 15.0;
     %NOTE currently unbalanced as components are of different size (spread<<fraction)
     %NOTE 1-mono_spread is only ok if monospread in [0,1], current normalisation factor does not guarantee that
-    folding_quality_metric = fraction_monomer .* (1.0 - mono_spread);
+    folding_quality_metric = fraction_monomer .* (1.0 - mono_spread .* spreadNormfactor);
     if profileData.has_ladder
         folding_quality_metric(1:2) = 0.0;
         folding_quality_metric(end-1:end) = 0.0;
@@ -93,7 +103,7 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     ladder_migrate_error = abs(rel_mono_migrate(1) - rel_mono_migrate(end));
     ladder_spread_error = abs(rel_mono_spread(1) - rel_mono_spread(end));
 
-    n = length(profileData.profiles);
+
     folding_quality_metric_migrate = zeros(n, 1);
     cutoff = 0.75; 
     tolerance = 1.0 * ladder_migrate_error;
@@ -101,7 +111,7 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
     for i = 1:n
         if rel_mono_migrate(i) < cutoff
             folding_quality_metric_migrate(i) = 0.0;
-        elseif (1-rel_mono_migrate(i)) < tolerance
+        elseif abs(rel_mono_migrate(i)-1.0) < tolerance
             folding_quality_metric_migrate(i) = folding_quality_metric(i);
         else
             %NOTE: ^2 increasses the harsheness of the migration penalty to
@@ -202,8 +212,8 @@ function [data_out, cur_fig] = get_best_folding(profileData, gelInfo, gelData, s
         err_migrate = ladder_migrate_error * ones(length(rel_mono_migrate),1);
         err_spread = ladder_spread_error * ones(length(rel_mono_spread),1);
         subplot(5,1,4)
-        errorbar(rel_mono_spread, err_migrate, '.-'), hold on
-        errorbar(rel_mono_migrate, err_spread, '.--'), hold on
+        errorbar(rel_mono_spread, err_spread, '.-'), hold on
+        errorbar(rel_mono_migrate, err_migrate, '.--'), hold on
         ylabel({'Normalized ', 'rel_spread or rela. migr. distance'})
         set(gca, 'XTick', (1:n), 'XTickLabels', gelInfo.lanes, 'XLim', [1 n], 'YLim', [0 rel_mono_migrate(1)])
         legend({'Band spread', 'Migr. distance'}, 'location', 'best')

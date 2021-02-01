@@ -2,7 +2,7 @@ function profileData = select_species(profileData,gelData, gelInfo)
 % @ step2
 % select context specfic areas in gel and calculate bands with gauss fit
 % TODO optimize selection order for fast & convenient workflow
-    n = length(profileData.profiles);    
+    n = length(profileData.fullProfiles);    
     peaks_ok= false;
     while ~peaks_ok
         %% select species
@@ -86,9 +86,9 @@ function profileData = select_species(profileData,gelData, gelInfo)
         ladderHeight = 50;
         scaffoldHeight = 50;
         bandHeight = 50;
-        mono_fits = zeros(length(profileData.profiles),3);
-        % NOTE cannot fit staples as data of lanes is not available (performance)
-        %staple_fits = cell(length(profileData.profiles),1);
+        stapleHeight = 200; 
+        mono_fits = zeros(length(profileData.fullProfiles),3);
+        staple_fits = zeros(length(profileData.fullProfiles),3);
         
         for i=1:n     
             if has_ladder
@@ -107,6 +107,7 @@ function profileData = select_species(profileData,gelData, gelInfo)
                 else
                     height = bandHeight;
                     xpos =  selectedMono(i-2,2) - fix(height/2);
+                    xpos_staple =  selectedStaple(i-2,2) - fix(height/2);
                 end
             else
                 if i == 1
@@ -118,14 +119,26 @@ function profileData = select_species(profileData,gelData, gelInfo)
                 else
                     height = bandHeight;
                     xpos =  selectedMono(i-1,2) - fix(height/2);
+                    xpos_staple =  selectedStaple(i-1,2) - fix(height/2);
                 end
             end
             y = profileData.fullProfiles{i}(xpos:xpos+height);
             x = double(xpos:xpos+height);
-
             options = fitoptions('gauss1', 'Lower', [0 xpos 0], 'Upper', [Inf (xpos+height) Inf]);
             mono_fits(i,:) = coeffvalues(fit(x', y, 'gauss1', options)); 
             
+            if i > has_ladder+1 && i < n-has_ladder
+                upper = xpos_staple+stapleHeight;
+                if upper > length(profileData.fullProfiles{i})
+                    upper = length(profileData.fullProfiles{i});
+                end
+
+                y = profileData.fullProfiles{i}(xpos_staple:upper);
+                x = double(xpos_staple:upper);
+                options = fitoptions('gauss1', 'Lower', [0 xpos_staple 0], 'Upper', [Inf upper Inf]);
+                staple_fits(i,:) = coeffvalues(fit(x', y, 'gauss1', options)); 
+            
+            end
             % ignore lanes picked above pocket
             if xpos < xpos_pocket
                 mono_fits(i,1) = 0.0;
@@ -140,6 +153,7 @@ function profileData = select_species(profileData,gelData, gelInfo)
         profileData.monomerFits = mono_fits;
         profileData.monomerSelectedArea = selectedMono;
         profileData.stapleLine = selectedStaple;
+        profileData.stapleFits = staple_fits;
         profileData.has_ladder = has_ladder;
     
         %% Display results and ask if ok

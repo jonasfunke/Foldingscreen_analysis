@@ -14,10 +14,10 @@ function plot_band_fits(gelData, profileData)
     for i=1:n
         x = profileData.lanePositions(i,1:2) - double(img_L);
         mu = profileData.monomerFits(i,2);
+        st = profileData.stapleFits(i,2);
         sig = profileData.monomerFits(i,3) * profileData.sigma_integrate;
         if i>limit && i <= n-limit
             c = [1.0, 0.0, 0.0];
-            plot(mean(x), profileData.stapleLine(i-limit,2), '.', 'color', [1.0 0.77 0.13]);
         elseif mu < mu_p
             c = [1.0 1.0 1.0];
         else        
@@ -28,6 +28,8 @@ function plot_band_fits(gelData, profileData)
         % plot leading band fits
         plot([x(1) x(2)] , [mu mu], 'color',  c);
         plot([mean(x) mean(x)], [mu-sig mu+sig],  'color', c);
+        
+        plot(mean(x), st, '.', 'color', [1.0 0.77 0.13]);
         
     end
 end

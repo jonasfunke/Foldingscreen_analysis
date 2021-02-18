@@ -1,7 +1,7 @@
-function step2_anotate_profiles(fname, pname, sigma_integrate)
+function step2_anotate_profiles(name, pname, sigma_integrate)
 % step2: IFS analysis pipeline
 % anotate the profiles by marking species
-
+    fname = [name  '_data.mat'];
     data = load([pname filesep fname]); % load data
     % select aggregates and monomer bands
     data.profileData.sigma_integrate = sigma_integrate;
@@ -14,9 +14,9 @@ function step2_anotate_profiles(fname, pname, sigma_integrate)
     disp(['Saving to ' pname filesep fname]);
     save([pname filesep fname], '-struct', 'data');
     
-    fname_fractions = [fname(1:end-4) '_fractions.out'];
-    disp(['Saving fractions to ' pname fname_fractions])
-    fid = fopen([pname fname_fractions],'w'); 
+    fname_fractions = [name '_fractions.out'];
+    disp(['Saving fractions to ' pname filesep fname_fractions])
+    fid = fopen([pname filesep fname_fractions],'w'); 
     fprintf(fid,'%s\n','#Monomer Smear Pocket MonomerFraction SmearFraction PocketFraction');
     fclose(fid);
     tmp = [data.profileData.monomerTotal data.profileData.smearTotal data.profileData.pocketTotal];

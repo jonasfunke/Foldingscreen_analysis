@@ -1,4 +1,4 @@
-function [fname] = step1_make_profiles(pname)
+function [name] = step1_make_profiles(pname)
 % step1: IFS analysis pipeline
 % process info of selected fodler
 % process image 
@@ -12,11 +12,13 @@ function [fname] = step1_make_profiles(pname)
         % get data
         txt = [txt_files(1).folder filesep txt_files(1).name];
         tif = [tif_files(1).folder filesep tif_files(1).name];
-        [~, name, ~ ] = fileparts(pname);
+        [~, folder, ext] = fileparts(pname);
+        name = strcat(folder, ext);
+        fname = [name  '_data.mat'];
+
         
         [gelData, gelInfo, profileData] = compute_profiles(pname, name, txt, tif);
         % save data
-        fname = [name  '_data.mat'];
         disp('Saving data... please wait')
         save([pname filesep fname], 'gelData', 'gelInfo', 'profileData' )
         disp(['Data written to: ' [pname filesep fname]])

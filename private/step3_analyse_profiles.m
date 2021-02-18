@@ -1,11 +1,11 @@
-function step3_analyse_profiles(fname, pname)
+function step3_analyse_profiles(name, pname)
 % step3: IFS analysis pipeline
 % analyse the profiles
+    fname = [name  '_data.mat'];
     data = load([pname filesep fname]);
     [data_tmp, cur_fig] = get_best_folding(data.profileData, data.gelInfo, data.gelData, true);
 
-    tmp = strsplit(pname, filesep);
-    print(cur_fig, '-dpdf', [pname filesep tmp{end-1} '_analysis.pdf']); %save figure
+    print(cur_fig, '-dpdf', [pname filesep name '_analysis.pdf']); %save figure
     data.foldingAnalysis = data_tmp;
 
     disp(['Saving to ' pname filesep fname])

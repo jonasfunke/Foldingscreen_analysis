@@ -57,6 +57,12 @@ function [parsed_data, warnings] = parse_gel_info(filepath, log_file)
             if strcmpi(strrep(seg{1}, ' ', ''), 'lattice_type')
                 parsed_data.lattice_type = strtrim(seg{2});
             end
+            if strcmpi(strrep(seg{1}, ' ', ''), 'tem_verified')
+                parsed_data.tem_verified = strtrim(seg{2});
+            end
+            if strcmpi(strrep(seg{1}, ' ', ''), 'comment')
+                parsed_data.comment = strtrim(seg{2});
+            end  
             if strcmpi(strrep(seg{1}, ' ', ''), 'scaffold_concentration')
                 parsed_data.scaffold_concentration = str2num(strtrim(seg{2}));
             end
